@@ -6,6 +6,10 @@
 #define False 0
 #endif
 
+#ifndef File
+#define File FILE
+#endif
+
 #ifndef COLOR_SIZE 
 // Hex string color size: #ffffff = 7
 #define COLOR_SIZE 7 
@@ -54,17 +58,14 @@ void dealloc(int args, ...)
 {    
     va_list ptr_list;
     va_start(ptr_list, args);
-    void *p;
     int i = args;
     while (i--)
     {
-        p = va_arg(ptr_list, void *);
-        if (p == NULL)
+        void *p = va_arg(ptr_list, void *);
+        if (p != NULL)
         {
-            break;
+            free(p);
         }
-        // printf("Deallocating string %s\n", (char *)p);
-        free(p);
     }
     va_end(ptr_list);
 }

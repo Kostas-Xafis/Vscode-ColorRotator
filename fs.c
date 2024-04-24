@@ -22,7 +22,7 @@ void expandMemory(char **str, int newSize)
     File operations
 */
 
-char *readLine(FILE *fp)
+char *readLine(File *fp)
 {
     int bufferSize = 512; // Initial buffer size
     char *line = (char *)malloc(bufferSize * sizeof(char));
@@ -164,7 +164,7 @@ int createDirPath(const char *path)
 
 int fileExists(const char *path)
 {
-    FILE *fp = fopen(path, "r");
+    File *fp = fopen(path, "r");
     if (fp)
     {
         fclose(fp);
@@ -181,7 +181,7 @@ int createFile(const char *path, const char *content, int force)
         return 0;
     }
 
-    FILE *fp = fopen(path, "w+");
+    File *fp = fopen(path, "w+");
     if (!fp)
     {
         fprintf(stderr, "Could not create file %s\n", path);
@@ -193,9 +193,20 @@ int createFile(const char *path, const char *content, int force)
     return 1;
 }
 
+File *openFile(const char *path, const char *mode)
+{
+    File *fp = fopen(path, mode);
+    if (!fp)
+    {
+        fprintf(stderr, "Could not open fp %s\n", path);
+        return NULL;
+    }
+    return fp;
+}
+
 char *readFile(const char *path)
 {
-    FILE *fp = fopen(path, "r");
+    File *fp = fopen(path, "r");
     if (!fp)
     {
         fprintf(stderr, "Could not open fp %s\n", path);

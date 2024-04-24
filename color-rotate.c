@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <signal.h>
 
 #include "globals.h"
 #include "fs.c"
@@ -12,22 +13,19 @@ char *BASE_COLOR_FIELD = "base_color"; // "base_color": "#ffffff"
 int COLOR_ROTATION_INTERVAL = 10;      // In seconds
 float COLOR_ROTATION = 8.33;           // In degrees
 
+static volatile bool keepRunning = True;
+
+void intHandler(int dummy)
+{
+    keepRunning = False;
+}
+
 char *readColorFromFile(const char *filePath)
 {
-    FILE *fp = fopen(filePath, "r");
-    if (!fp)
-    {
-        fprintf(stderr, "Could not open fp %s\n", filePath);
-        return NULL;
-    }
+    File *fp = openFile(filePath, "r");
+    if (fp == NULL) return NULL;
 
     char *color = malloc(COLOR_SIZE + 1);
-    if (!color)
-    {
-        fprintf(stderr, "Could not allocate memory for color\n");
-        return NULL;
-    }
-
     char *line;
     while ((line = readLine(fp)) != NULL)
     {
@@ -38,7 +36,7 @@ char *readColorFromFile(const char *filePath)
             strncpy(color, colorPos + strlen(BASE_COLOR_FIELD) + 4, COLOR_SIZE);
             break;
         }
-        free(line);
+        dealloc(1, line);
     }
 
     fclose(fp);
@@ -48,7 +46,7 @@ char *readColorFromFile(const char *filePath)
 
 void replaceColorInFile(const char *filePath, char *currentColor, char *newColor)
 {
-    FILE *fp = fopen(filePath, "r+");
+    File *fp = fopen(filePath, "r+");
     if (!fp)
     {
         fprintf(stderr, "Could not open fp %s\n", filePath);
@@ -85,7 +83,7 @@ void loadArgs(int argc, char *argv[])
             WORKSPACE_SETTINGS_PATH = strcpy(WORKSPACE_SETTINGS_PATH, argv[i + 1]);
             strcat(WORKSPACE_SETTINGS_PATH, "/.vscode/settings.json");
         }
-        else if (strcmp(argv[i], "-c") == 0)
+        else if (strcmp(argv[i], "-r") == 0)
         {
             COLOR_ROTATION = atof(argv[i + 1]);
         }
@@ -111,21 +109,21 @@ int main(int argc, char *argv[])
     loadArgs(argc, argv);
     createSettingsFile();
 
-    // char *color;
-    // char *newColor = malloc(COLOR_SIZE + 1);
+    signal(SIGINT, intHandler);
 
-    // // Read color from JSON fp
-    // color = readColorFromFile(WORKSPACE_SETTINGS_PATH);
-    // while (True)
-    // {
-    //     HSLToHex(rotateHue(HexToHSL(color), COLOR_ROTATION), newColor);
+    // Read color from JSON fp
+    char *color = readColorFromFile(WORKSPACE_SETTINGS_PATH);
+    char *newColor = malloc(COLOR_SIZE + 1);
+    while (keepRunning)
+    {
+        HSLToHex(rotateHue(HexToHSL(color), COLOR_ROTATION), newColor);
 
-    //     replaceColorInFile(WORKSPACE_SETTINGS_PATH, color, newColor);
+        replaceColorInFile(WORKSPACE_SETTINGS_PATH, color, newColor);
 
-    //     memcpy(color, newColor, COLOR_SIZE);
+        memcpy(color, newColor, COLOR_SIZE);
 
-    //     sleep(COLOR_ROTATION_INTERVAL);
-    // }
+        sleep(COLOR_ROTATION_INTERVAL);
+    }
 
     return 0;
 }

@@ -11,4 +11,3 @@ dest/fs.o: fs.c globals.h
 
 dest/colorUtils.o globals.h: colorUtils.c
 	gcc -c colorUtils.c -o dest/colorUtils.o
-
